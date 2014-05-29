@@ -6,6 +6,7 @@ import org.eclipse.jdt.internal.compiler.CompilationResult;
 import org.eclipse.jdt.internal.compiler.Compiler;
 import org.eclipse.jdt.internal.compiler.DefaultErrorHandlingPolicies;
 import org.eclipse.jdt.internal.compiler.ICompilerRequestor;
+import org.eclipse.jdt.internal.compiler.ast.CompilationUnitDeclaration;
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFileReader;
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFormatException;
 import org.eclipse.jdt.internal.compiler.env.ICompilationUnit;
@@ -20,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
@@ -51,18 +53,43 @@ public class CompilationTest {
     @Test
     public void testCompilation() {
         KieCompilerRequestor requestor = new KieCompilerRequestor();
-        CompilerOptions options = new CompilerOptions();
 
-        Compiler compiler = new KieCompiler(new KieNameEnvironment(getClass().getClassLoader()),
-                                         DefaultErrorHandlingPolicies.proceedWithAllProblems(),
-                                         options,
-                                         requestor,
-                                         new DefaultProblemFactory(Locale.getDefault()));
+        Compiler compiler = new KieCompiler( new KieNameEnvironment(getClass().getClassLoader()),
+                                             DefaultErrorHandlingPolicies.proceedWithAllProblems(),
+                                             new CompilerOptions(),
+                                             requestor,
+                                             new DefaultProblemFactory(Locale.getDefault()) );
 
         ICompilationUnit compilationUnit = new KieCompilationUnit("org/eclipse/jdt/Person.java", person_java);
 
         compiler.compile(new ICompilationUnit[] { compilationUnit });
-        System.out.println(requestor.getClasses());
+
+        byte[] bytecode = requestor.getClasses().get("org/eclipse/jdt/Person.class");
+        System.out.println(Arrays.toString(bytecode));
+    }
+
+    @Test
+    public void testASTGeneration() {
+        KieCompiler compiler1 = new KieCompiler( new KieNameEnvironment(getClass().getClassLoader()),
+                                                 DefaultErrorHandlingPolicies.proceedWithAllProblems(),
+                                                 new CompilerOptions(),
+                                                 null,
+                                                 new DefaultProblemFactory(Locale.getDefault()) );
+
+        ICompilationUnit compilationUnit = new KieCompilationUnit("org/eclipse/jdt/Person.java", person_java);
+        CompilationUnitDeclaration[] astUnits = compiler1.generateASTs(new ICompilationUnit[] { compilationUnit });
+
+        KieCompilerRequestor requestor = new KieCompilerRequestor();
+        KieCompiler compiler2 = new KieCompiler( new KieNameEnvironment(getClass().getClassLoader()),
+                                                 DefaultErrorHandlingPolicies.proceedWithAllProblems(),
+                                                 new CompilerOptions(),
+                                                 requestor,
+                                                 new DefaultProblemFactory(Locale.getDefault()) );
+
+        compiler2.compileASTs(astUnits);
+
+        byte[] bytecode = requestor.getClasses().get("org/eclipse/jdt/Person.class");
+        System.out.println(Arrays.toString(bytecode));
     }
 
     public static class KieNameEnvironment implements INameEnvironment {

@@ -19,7 +19,7 @@ public class ProcessTaskManager implements Runnable {
 	Compiler compiler;
 	private int unitIndex;
 	private Thread processingThread;
-	CompilationUnitDeclaration unitToProcess;
+	public CompilationUnitDeclaration unitToProcess;
 	private Throwable caughtException;
 
 	// queue
